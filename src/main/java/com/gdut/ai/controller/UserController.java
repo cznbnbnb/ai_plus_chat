@@ -2,20 +2,21 @@ package com.gdut.ai.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.gdut.ai.common.R;
+import com.gdut.ai.entity.Contact;
+import com.gdut.ai.entity.FriendRequest;
 import com.gdut.ai.entity.User;
 import com.gdut.ai.service.UserService;
 import com.gdut.ai.utils.JwtUtil;
 import com.gdut.ai.utils.ValidateCodeUtils;
+import com.gdut.ai.view.FriendView;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -81,4 +82,81 @@ public class UserController {
         request.getSession().removeAttribute("user");
         return R.success("退出登录成功");
     }
+
+    //用户好友申请
+    @PostMapping("/friendRequest")
+    public R<String> friendRequest(@RequestBody Map map,HttpSession session){
+        log.info("好友申请信息：{}",map);
+        //获取用户id
+        Long userId = (Long) session.getAttribute("user");
+        //获取好友id
+        String friendEmail = map.get("friendId").toString();
+        //获取附加消息
+        String message = map.get("message").toString();
+        //调用service层方法完成好友申请
+        boolean flag = userService.friendRequest(userId,friendEmail,message);
+        if(flag){
+            return R.success("好友申请成功");
+        }
+        return R.error("好友申请失败");
+    }
+
+    //获取用户收到的申请列表
+    @GetMapping("/getFriendRequest")
+    public R<List<FriendRequest>> getFriendRequest(HttpSession session){
+        //获取用户id
+        Long userId = (Long) session.getAttribute("user");
+        //调用service层方法获取用户收到的申请列表
+        List<FriendRequest> list = userService.getFriendRequest(userId);
+        if (list == null || list.size() == 0){
+            return R.error("暂无好友申请");
+        }
+        return R.success(list);
+    }
+
+    // 同意或拒绝好友申请
+    @PostMapping("/handleFriendRequest")
+    public R<String> handleFriendRequest(@RequestBody Map map, HttpSession session) {
+        // 获取用户id
+        Long userId = (Long) session.getAttribute("user");
+        // 获取好友申请id
+        Long requestId = Long.parseLong(map.get("requestId").toString());
+        // 获取操作类型
+        int type = Integer.parseInt(map.get("type").toString());
+        // 调用service层方法处理好友申请
+        boolean flag = userService.handleFriendRequest(userId, requestId, type);
+        if (flag) {
+            return R.success("好友申请处理成功");
+        }
+        return R.error("好友申请处理失败");
+    }
+
+    // 获取有过交流的好友列表
+    @GetMapping("/getFriendList")
+    public R<List<FriendView>> getFriendList(HttpSession session) {
+        // 获取用户id
+        Long userId = (Long) session.getAttribute("user");
+        // 调用service层方法获取用户好友列表
+        List<FriendView> list = userService.getFriendList(userId);
+        if (list == null || list.size() == 0) {
+            return R.error("暂无已交流的好友，快去与好友聊天吧");
+        }
+        return R.success(list);
+    }
+
+    // 获取全部好友列表
+    @GetMapping("/getAllFriendList")
+    public R<List<User>> getAllFriendList(HttpSession session) {
+        // 获取用户id
+        Long userId = (Long) session.getAttribute("user");
+        // 调用service层方法获取用户好友列表
+        List<User> list = userService.getAllFriendList(userId);
+        if (list == null || list.size() == 0) {
+            return R.error("暂无好友，快去添加好友吧");
+        }
+        return R.success(list);
+    }
+
+
+
 }
