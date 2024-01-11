@@ -2,6 +2,9 @@ package com.gdut.ai.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import lombok.Data;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -15,15 +18,18 @@ public class ChatMessage implements Serializable {
     private static final long serialVersionUID = 1L;
 
     // 消息ID
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
     // 发送者ID
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long senderId;
 
     // 发送者姓名
     private String senderName;
 
     // 接收者ID
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long receiverId;
 
     // 接收者姓名

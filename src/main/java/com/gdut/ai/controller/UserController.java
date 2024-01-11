@@ -5,6 +5,7 @@ import com.gdut.ai.common.R;
 import com.gdut.ai.entity.Contact;
 import com.gdut.ai.entity.FriendRequest;
 import com.gdut.ai.entity.User;
+import com.gdut.ai.entity.UserSettings;
 import com.gdut.ai.service.UserService;
 import com.gdut.ai.utils.JwtUtil;
 import com.gdut.ai.utils.ValidateCodeUtils;
@@ -47,12 +48,12 @@ public class UserController {
 
     //移动端用户登录
     @PostMapping("/login")
-    public R<User> login(@RequestBody Map map,HttpSession session){
+    public R<User> login(@RequestBody Map<String, String> map,HttpSession session){
         log.info("登录信息：{}",map);
         //获取邮箱
-        String email = map.get("email").toString();
+        String email = map.get("email");
         //获取验证码
-        String code = map.get("code").toString();
+        String code = map.get("code");
         //从session中获取保存的验证码
         Object codeInSession = session.getAttribute(email);
         //进行验证码比对（页面提交的验证码 与 session中保存的验证码 比对）
@@ -85,14 +86,14 @@ public class UserController {
 
     //用户好友申请
     @PostMapping("/friendRequest")
-    public R<String> friendRequest(@RequestBody Map map,HttpSession session){
+    public R<String> friendRequest(@RequestBody Map<String, String> map,HttpSession session){
         log.info("好友申请信息：{}",map);
         //获取用户id
         Long userId = (Long) session.getAttribute("user");
         //获取好友id
-        String friendEmail = map.get("friendId").toString();
+        String friendEmail = map.get("friendId");
         //获取附加消息
-        String message = map.get("message").toString();
+        String message = map.get("message");
         //调用service层方法完成好友申请
         boolean flag = userService.friendRequest(userId,friendEmail,message);
         if(flag){
@@ -116,13 +117,13 @@ public class UserController {
 
     // 同意或拒绝好友申请
     @PostMapping("/handleFriendRequest")
-    public R<String> handleFriendRequest(@RequestBody Map map, HttpSession session) {
+    public R<String> handleFriendRequest(@RequestBody Map<String, String> map, HttpSession session) {
         // 获取用户id
         Long userId = (Long) session.getAttribute("user");
         // 获取好友申请id
-        Long requestId = Long.parseLong(map.get("requestId").toString());
+        Long requestId = Long.parseLong(map.get("requestId"));
         // 获取操作类型
-        int type = Integer.parseInt(map.get("type").toString());
+        int type = Integer.parseInt(map.get("type"));
         // 调用service层方法处理好友申请
         boolean flag = userService.handleFriendRequest(userId, requestId, type);
         if (flag) {
@@ -155,6 +156,37 @@ public class UserController {
             return R.error("暂无好友，快去添加好友吧");
         }
         return R.success(list);
+    }
+
+    @PostMapping("/settings")
+    public R<?> updateUserSettings(@RequestBody UserSettings settings, HttpSession session) {
+        try {
+            Long userId = (Long) session.getAttribute("user");
+            if (userId == null) {
+                return R.error("请先登录");
+            }
+            // 更新用户信息
+            userService.updateSettings(settings, userId);
+            return R.success("Settings updated successfully");
+        } catch (Exception e) {
+            log.error("更新设置失败", e);
+            return R.error("更新设置失败");
+        }
+    }
+
+    //删除好友
+    @PostMapping("/deleteContact")
+    public R<String> deleteFriend(@RequestBody Map<String, String> map,HttpSession session){
+        //获取用户id
+        Long userId = (Long) session.getAttribute("user");
+        //获取好友id
+        Long friendId = Long.parseLong(map.get("contactId"));
+        //调用service层方法删除好友
+        boolean flag = userService.deleteFriend(userId,friendId);
+        if(flag){
+            return R.success("删除好友成功");
+        }
+        return R.error("删除好友失败");
     }
 
 

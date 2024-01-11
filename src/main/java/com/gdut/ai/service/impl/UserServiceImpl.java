@@ -1,11 +1,9 @@
 package com.gdut.ai.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.gdut.ai.entity.ChatMessage;
-import com.gdut.ai.entity.Contact;
-import com.gdut.ai.entity.FriendRequest;
-import com.gdut.ai.entity.User;
+import com.gdut.ai.entity.*;
 import com.gdut.ai.mapper.UserMapper;
 import com.gdut.ai.service.ChatMessageService;
 import com.gdut.ai.service.ContactService;
@@ -116,16 +114,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         for (Contact contact : contactList) {
             User user = this.getById(contact.getContactUserId());
             // 获取好友聊天记录
+            Page<ChatMessage> pageConfig = new Page<>(1, 30);
+            Long friendId = contact.getContactUserId();
+            // 获取最后一条聊天记录
             LambdaQueryWrapper<ChatMessage> messageWrapper = new LambdaQueryWrapper<>();
-            messageWrapper.eq(ChatMessage::getSenderId, user.getId())
-                    .eq(ChatMessage::getReceiverId, userId);
-            List<ChatMessage> chatMessageList = new ArrayList<>(chatMessageService.list(messageWrapper));
-            FriendView friendView = new FriendView();
-            if (chatMessageList.size()== 0) {
-               continue;
+            messageWrapper.eq(ChatMessage::getSenderId, userId)
+                    .eq(ChatMessage::getReceiverId, friendId)
+                    .or()
+                    .eq(ChatMessage::getSenderId, friendId)
+                    .eq(ChatMessage::getReceiverId, userId)
+                    .orderByDesc(ChatMessage::getCreateTime)
+                    .last("limit 1");
+            if (chatMessageService.getOne(messageWrapper) == null) {
+                continue;
             }
-            friendView.setChatMessage(chatMessageList);
-            friendView.setUserId(user.getId());
+            FriendView friendView = new FriendView();
+            friendView.setLastMessage(chatMessageService.getOne(messageWrapper).getContent());
+            friendView.setId(user.getId());
+            friendView.setEmail(user.getEmail());
             friendView.setAvatar(user.getAvatar());
             friendView.setName(user.getName());
             friendView.setRemark(contact.getRemark());
@@ -146,6 +152,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userList.add(user);
         }
         return userList;
+    }
+
+    @Override
+    public void updateSettings(UserSettings userSettings, Long userId) {
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        user.setName(userSettings.getName());
+        user.setSex(userSettings.getSex());
+        user.setAvatar(userSettings.getAvatar());
+        this.updateById(user);
+    }
+
+    @Override
+    public boolean deleteFriend(Long userId, Long friendId) {
+        LambdaQueryWrapper<Contact> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Contact::getUserId, userId)
+                .eq(Contact::getContactUserId, friendId);
+        contactService.remove(wrapper);
+        LambdaQueryWrapper<Contact> wrapper2 = new LambdaQueryWrapper<>();
+        wrapper2.eq(Contact::getUserId, friendId)
+                .eq(Contact::getContactUserId, userId);
+        contactService.remove(wrapper2);
+        return true;
     }
 
 }
