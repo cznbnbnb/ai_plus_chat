@@ -9,6 +9,8 @@ public class ResultCollector {
 
     public static final int STATE_FINISHED = 2;
 
+    private boolean canDisplay = false;
+
     //大模型回答
     private String answer;
 
@@ -53,6 +55,12 @@ public class ResultCollector {
         return outputToken;
     }
 
+    public void setCanDisplay(boolean canDisplay) {
+        this.canDisplay = canDisplay;
+    }
+    public boolean getCanDisplay() {
+        return canDisplay;
+    }
 
     public int getState() {
         return state;

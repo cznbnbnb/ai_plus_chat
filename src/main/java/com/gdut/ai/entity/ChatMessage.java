@@ -41,11 +41,12 @@ public class ChatMessage implements Serializable {
     // 消息类型 0:文本 1:图片
     private Integer type;
 
-    // 创建时间
+    // 消息发送对象类型 0:用户 1:群组
+    private Integer receiverType;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    // 更新时间
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 

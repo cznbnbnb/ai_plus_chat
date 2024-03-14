@@ -1,15 +1,14 @@
 package com.gdut.ai.service.impl;
 
+import com.aliyuncs.utils.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.gdut.ai.entity.*;
 import com.gdut.ai.mapper.UserMapper;
-import com.gdut.ai.service.ChatMessageService;
-import com.gdut.ai.service.ContactService;
-import com.gdut.ai.service.FriendRequestService;
-import com.gdut.ai.service.UserService;
+import com.gdut.ai.service.*;
 import com.gdut.ai.view.FriendView;
+import com.gdut.ai.view.RequestView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,12 +27,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private ChatMessageService chatMessageService;
 
+    @Autowired
+    private GroupJoinRequestService groupJoinRequestService;
+
+    @Autowired
+    private GroupsService groupsService;
+
     @Override
     public boolean friendRequest(Long requesterId, String friendEmail, String message) {
         //查看是否存在该用户
         LambdaQueryWrapper<User> userWrapper = new LambdaQueryWrapper<>();
         userWrapper.eq(User::getEmail, friendEmail);
         User user = this.getOne(userWrapper);
+        User self = this.getById(requesterId);
 
         // 检查是否已经发送过好友请求
         LambdaQueryWrapper<FriendRequest> requestWrapper = new LambdaQueryWrapper<>();
@@ -56,6 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         FriendRequest newRequest = new FriendRequest();
         newRequest.setRequesterId(requesterId);
         newRequest.setReceiverId(user.getId());
+        newRequest.setAvatar(self.getAvatar());
         newRequest.setMessage(message);
         newRequest.setStatus(0); // 0 代表未处理
         friendRequestService.save(newRequest);
@@ -64,12 +71,49 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public List<FriendRequest> getFriendRequest(Long userId) {
-        LambdaQueryWrapper<FriendRequest> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FriendRequest::getReceiverId, userId)
-                .eq(FriendRequest::getStatus, 0);
-        return friendRequestService.list(wrapper);
+    public List<RequestView> getRequest(Long userId) {
+        List<RequestView> requestViewList = new ArrayList<>();
+        try {
+            // 处理好友请求
+            LambdaQueryWrapper<FriendRequest> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(FriendRequest::getReceiverId, userId)
+                    .eq(FriendRequest::getStatus, 0);
+            List<FriendRequest> friendRequests = friendRequestService.list(wrapper);
+            if (friendRequests != null) {
+                friendRequests.forEach(request -> {
+                    RequestView requestView = new RequestView(request);
+                    requestViewList.add(requestView);
+                });
+            }
+
+            // 处理群组加入请求
+
+            // 找到用户为群主的群组
+            LambdaQueryWrapper<GroupTable> groupsWrapper = new LambdaQueryWrapper<>();
+            groupsWrapper.eq(GroupTable::getOwnerId, userId);
+            List<GroupTable> groupTables = groupsService.list(groupsWrapper);
+            // 遍历群组，找到每个群组的加入请求
+            if (groupTables != null) {
+                groupTables.forEach(groupTable -> {
+                    LambdaQueryWrapper<GroupJoinRequest> wrapper2 = new LambdaQueryWrapper<>();
+                    wrapper2.eq(GroupJoinRequest::getGroupId, groupTable.getId())
+                            .eq(GroupJoinRequest::getStatus, 0);
+                    List<GroupJoinRequest> groupJoinRequests = groupJoinRequestService.list(wrapper2);
+                    if (groupJoinRequests != null) {
+                        groupJoinRequests.forEach(request -> {
+                            RequestView requestView = new RequestView(request);
+                            requestViewList.add(requestView);
+                        });
+                    }
+                });
+            }
+        } catch (Exception e) {
+            // 记录异常信息
+            log.error("获取好友请求列表失败:" + userId, e);
+        }
+        return requestViewList;
     }
+
 
     @Override
     public boolean handleFriendRequest(Long userId, Long requestId, int type) {
@@ -98,7 +142,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             contact2.setContactUserId(userId);
             contactService.save(contact2);
         }
-
 
 
         return true;
@@ -151,18 +194,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             User user = this.getById(contact.getContactUserId());
             userList.add(user);
         }
+        desensitization(userList);
         return userList;
     }
 
     @Override
     public void updateSettings(UserSettings userSettings, Long userId) {
         User user = this.getById(userId);
+        if (userSettings == null) {
+            throw new RuntimeException("用户设置为空");
+        }
+        if (userSettings.getEmail() == null) {
+            throw new RuntimeException("用户设置为空");
+        }
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
         user.setName(userSettings.getName());
         user.setSex(userSettings.getSex());
         user.setAvatar(userSettings.getAvatar());
+        String oldPassword = userSettings.getOldPassword();
+        String newPassword = userSettings.getNewPassword();
+        if (StringUtils.isEmpty(user.getPassword())&&!StringUtils.isEmpty(newPassword)){
+            user.setPassword(newPassword);
+        } else if (!StringUtils.isEmpty(oldPassword)&&!StringUtils.isEmpty(newPassword)) {
+            if (!oldPassword.equals(user.getPassword())) {
+                throw new RuntimeException("原密码错误");
+            }
+            user.setPassword(newPassword);
+        }
         this.updateById(user);
     }
 
@@ -177,6 +237,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .eq(Contact::getContactUserId, userId);
         contactService.remove(wrapper2);
         return true;
+    }
+
+
+
+    @Override
+    public User loginByPassword(String email, String password) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getEmail, email)
+                .eq(User::getPassword, password);
+        User user = this.getOne(wrapper);
+        if (user != null) {
+            desensitization(user);
+        }
+        return user;
+    }
+
+    //进行单个用户的密码脱敏
+    private void desensitization(User user) {
+        user.setPassword("");
+    }
+
+    //进行用户列表的密码脱敏
+    private void desensitization(List<User> userList) {
+        for (User user : userList) {
+            user.setPassword("");
+        }
     }
 
 }

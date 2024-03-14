@@ -37,11 +37,9 @@ public class Moment implements Serializable {
     // 动态图片
     private String images;
 
-    // 发布时间
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    // 更新时间
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 }

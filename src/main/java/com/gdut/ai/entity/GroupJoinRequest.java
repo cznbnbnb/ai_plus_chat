@@ -29,6 +29,15 @@ public class GroupJoinRequest implements Serializable {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long groupId;
 
+    // 申请人头像
+    private String avatar;
+
+    // 申请群头像
+    private String groupAvatar;
+
+    // 群组名称
+    private String groupName;
+
     // 申请状态 (例如：0 待审核，1 已接受，2 已拒绝)
     private Integer status;
 
@@ -37,4 +46,7 @@ public class GroupJoinRequest implements Serializable {
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 }

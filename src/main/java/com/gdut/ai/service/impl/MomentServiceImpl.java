@@ -72,5 +72,14 @@ public class MomentServiceImpl extends ServiceImpl<MomentMapper, Moment> impleme
         return false;
     }
 
+    @Override
+    public Page<Moment> getMyMoments(Long userId, Integer page, Integer pageSize) {
+        LambdaQueryWrapper<Moment> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Moment::getUserId, userId);
+        wrapper.orderByDesc(Moment::getCreateTime);
+        Page<Moment> moments = new Page<>(page, pageSize);
+        return page(moments, wrapper);
+    }
+
 
 }

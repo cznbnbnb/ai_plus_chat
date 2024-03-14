@@ -29,35 +29,36 @@ public class XfSpark implements Gpt {
     private String apiKey;
 
     //存放大模型回复
-    ConcurrentHashMap<String, ResultCollector> resultMap = new ConcurrentHashMap<>();
+    ConcurrentHashMap<Long, ResultCollector> resultMap = new ConcurrentHashMap<>();
 
     final static Logger logger = LoggerFactory.getLogger(XfSpark.class);
 
     @Override
-    public void send(String question, String accessId) throws Exception {
-        String hostUrl = "https://spark-api.xf-yun.com/v2.1/chat";
+    public void send(String question, Long userId,boolean canDisplay) throws Exception {
+        logger.info("发送消息{}，userId：{}",question, userId);
+        String hostUrl = "https://spark-api.xf-yun.com/v3.5/chat";
         // 构建鉴权url
         String authUrl = getAuthUrl(hostUrl, apiKey, apiSecret);
         OkHttpClient client = new OkHttpClient.Builder().build();
         String url = authUrl.replace("http://", "ws://").replace("https://", "wss://");
         Request request = new Request.Builder().url(url).build();
-        XFSparkModel model = new XFSparkModel(this, false, request, accessId);
+        XFSparkModel model = new XFSparkModel(this, false, request, userId, canDisplay);
         model.setNewQuestion(question);
         // 个性化参数入口，如果是并发使用，可以在这里模拟
         WebSocket webSocket = client.newWebSocket(request, model);
     }
 
     @Override
-    public ResultCollector getAnswer(String accessId) throws AskException {
-        if (resultMap.containsKey(accessId)) {
-            ResultCollector resultCollector = resultMap.get(accessId);
+    public ResultCollector getAnswer(Long userId) throws AskException {
+        if (resultMap.containsKey(userId)) {
+            ResultCollector resultCollector = resultMap.get(userId);
             if (resultCollector.getState() == ResultCollector.STATE_FINISHED) {
-                resultMap.remove(accessId);
+                resultMap.remove(userId);
                 return resultCollector;
             }
             return resultCollector;
         }
-        logger.info("该用户未进行对话：{}", accessId);
+        logger.info("该用户未进行对话：{}", userId);
         throw new AskException("该用户未进行对话");
     }
 
@@ -102,8 +103,8 @@ public class XfSpark implements Gpt {
     }
 
     @Override
-    public void removeUserMap(String accessId) {
-        resultMap.remove(accessId);
+    public void removeUserMap(Long userId) {
+        resultMap.remove(userId);
     }
 
     @Override
@@ -112,7 +113,7 @@ public class XfSpark implements Gpt {
     }
 
     @Override
-    public ConcurrentHashMap<String, ResultCollector> getResultMap() {
+    public ConcurrentHashMap<Long, ResultCollector> getResultMap() {
         return resultMap;
     }
 

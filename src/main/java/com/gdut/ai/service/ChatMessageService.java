@@ -11,4 +11,6 @@ public interface ChatMessageService extends IService<ChatMessage> {
     Page<ChatMessage> getMessages(Long userId, Long friendId, int page, int pageSize);
 
     boolean deleteMessage(Long userId, Long friendId);
+
+
 }

@@ -13,4 +13,6 @@ public interface MomentService extends IService<Moment> {
     Page<Moment> getMoments(Long userId, Integer page, Integer pageSize);
 
     boolean deleteMoment(Long userId,Long momentId);
+
+    Page<Moment> getMyMoments(Long userId, Integer page, Integer pageSize);
 }

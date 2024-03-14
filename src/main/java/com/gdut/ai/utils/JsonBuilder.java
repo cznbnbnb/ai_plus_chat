@@ -3,19 +3,19 @@ package com.gdut.ai.utils;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.UUID;
 
 public class JsonBuilder {
 
     public String buildRequestJson(String appid, String newQuestion) {
-        String domain = "generalv2";
         JSONObject header = new JSONObject();
         header.put("app_id", appid);
         header.put("uid", UUID.randomUUID().toString().substring(0, 10));
 
         JSONObject chat = new JSONObject();
-        chat.put("domain", domain);
+        chat.put("domain", "generalv3.5");
         chat.put("temperature", 0.5);
 
         JSONObject parameter = new JSONObject();

@@ -1,5 +1,6 @@
 package com.gdut.ai.config;
 import com.gdut.ai.service.ChatMessageService;
+import com.gdut.ai.service.GroupMemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Autowired
     private ChatMessageService chatMessageService;
 
+    @Autowired
+    private GroupMemberService groupMemberService;
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(myWebSocketHandler(), "/ws")
@@ -23,7 +27,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Bean
     public MyWebSocketHandler myWebSocketHandler() {
-        return new MyWebSocketHandler(chatMessageService);
+        return new MyWebSocketHandler(chatMessageService, groupMemberService);
     }
 }
 

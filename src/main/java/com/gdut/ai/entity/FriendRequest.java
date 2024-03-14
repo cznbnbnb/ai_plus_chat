@@ -29,6 +29,9 @@ public class FriendRequest implements Serializable {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long receiverId;
 
+    // 申请人头像
+    private String avatar;
+
     // 申请状态 (例如：0 待审核，1 已接受，2 已拒绝)
     private Integer status;
 
@@ -37,4 +40,7 @@ public class FriendRequest implements Serializable {
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 }

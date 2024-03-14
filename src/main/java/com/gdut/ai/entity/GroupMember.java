@@ -28,8 +28,17 @@ public class GroupMember implements Serializable {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
 
+    //用户群昵称
+    private String nickname;
+
+    //用户对群的备注
+    private String remark;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 
 
 }

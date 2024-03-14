@@ -10,6 +10,7 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,7 +32,7 @@ public class XFSparkModel extends WebSocketListener {
     public Request request;
     public Gson gson = new Gson();
     
-    private final String accessId;
+    private final Long userId;
 
     StringBuilder combinedStringBuilder;
     private Boolean wsCloseFlag;
@@ -40,13 +41,17 @@ public class XFSparkModel extends WebSocketListener {
 
     private final Gpt m_XFSpark;
 
+    //如果是命令模式，则在二轮对话之前不展示聊天内容
+    private final boolean canDisplay;
+
     // 构造函数
-    public XFSparkModel(Gpt gpt, Boolean wsCloseFlag, Request request, String accessId) {
-        this.appid = "1fd04e97";
+    public XFSparkModel(Gpt gpt, Boolean wsCloseFlag, Request request, Long userId, boolean canDisplay) {
+        this.appid = "4c73e42b";
         this.request = request;
         this.wsCloseFlag = wsCloseFlag;
         this.combinedStringBuilder = new StringBuilder();
-        this.accessId = accessId;
+        this.userId = userId;
+        this.canDisplay = canDisplay;
         m_XFSpark = gpt;
     }
 
@@ -94,7 +99,6 @@ public class XFSparkModel extends WebSocketListener {
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
         super.onOpen(webSocket, response);
-        //System.out.println(webSocket.request());
         MyThread myThread = new MyThread(webSocket);
         myThread.start();
     }
@@ -102,7 +106,6 @@ public class XFSparkModel extends WebSocketListener {
     //当 WebSocket 接收到来自客户端的消息时，会调用
     @Override
     public void onMessage(WebSocket webSocket, String text) {
-        //System.out.println(accessId + "用来区分那个用户的结果" + text);
         JsonParse myJsonParse = JsonParse.fromJsonString(text);
         //System.out.println(myJsonParse.header.code);
         if (myJsonParse.header.code != 0) {
@@ -114,23 +117,24 @@ public class XFSparkModel extends WebSocketListener {
         for (JsonParse.Text temp : textList) {
             System.out.print(temp.content);
             combinedStringBuilder.append(temp.content);
-            if (m_XFSpark.getResultMap().containsKey(accessId)) {
-                m_XFSpark.getResultMap().get(accessId).setAnswer(combinedStringBuilder.toString());
+            if (m_XFSpark.getResultMap().containsKey(userId)) {
+                m_XFSpark.getResultMap().get(userId).setAnswer(combinedStringBuilder.toString());
             } else {
-                m_XFSpark.getResultMap().put(accessId, new ResultCollector(combinedStringBuilder.toString()
+                m_XFSpark.getResultMap().put(userId, new ResultCollector(combinedStringBuilder.toString()
                         , 0, 0, "星火大模型V2.0"
                 ));
+                //设置是否展示
+                m_XFSpark.getResultMap().get(userId).setCanDisplay(canDisplay);
             }
         }
         if (myJsonParse.header.status == STATE_FINISHED) {
             // 可以关闭连接，释放资源
             logger.info("星火大模型V2.0回复结束");
-            ResultCollector resultCollector = m_XFSpark.getResultMap().get(accessId);
+            ResultCollector resultCollector = m_XFSpark.getResultMap().get(userId);
             int inputToken = myJsonParse.payload.usage.textUsage.prompt_tokens;
             resultCollector.setInputToken(inputToken);
             int outputToken = myJsonParse.payload.usage.textUsage.completion_tokens;
             resultCollector.setOutputToken(outputToken);
-
             resultCollector.setState(STATE_FINISHED);
             this.status = STATE_FINISHED;
             wsCloseFlag = true;
@@ -164,8 +168,8 @@ public class XFSparkModel extends WebSocketListener {
         this.status = status;
     }
 
-    public String getAccessId() {
-        return accessId;
+    public Long getUserId() {
+        return userId;
     }
 
 

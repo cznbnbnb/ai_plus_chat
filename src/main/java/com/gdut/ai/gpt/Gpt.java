@@ -9,14 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public interface Gpt {
 
     // 问题（模板+问题）
-    void send(String question,String accessId) throws Exception;
+    void send(String question,Long userId,boolean canDisplay) throws Exception;
 
-    ResultCollector getAnswer(String accessId) throws AskException;
+    ResultCollector getAnswer(Long userId) throws AskException;
     //删除用户的问答映射
-    void removeUserMap(String accessId);
+    void removeUserMap(Long accessId);
 
     int getMaxToken();
 
-    ConcurrentHashMap<String, ResultCollector> getResultMap();
+    ConcurrentHashMap<Long, ResultCollector> getResultMap();
 
 }

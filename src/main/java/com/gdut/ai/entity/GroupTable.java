@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * 群组信息
  */
 @Data
-public class Group implements Serializable {
+public class GroupTable implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

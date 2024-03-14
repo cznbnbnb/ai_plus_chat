@@ -46,6 +46,16 @@ public class MomentController {
         return R.success(momentsService.getMoments(userId, page, pageSize));
     }
 
+    // 获取自己的朋友圈
+    @GetMapping("/getMyMoments")
+    public R<Page<Moment>> getMyMoments(
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "limit", defaultValue = "20") Integer pageSize,
+            HttpSession session) {
+        Long userId = (Long) session.getAttribute("user");
+        return R.success(momentsService.getMyMoments(userId, page, pageSize));
+    }
+
     // 删除朋友圈
     @PostMapping("/deleteMoment")
     public R<String> deleteMoment(@RequestBody Map<String, String> map, HttpSession session) {

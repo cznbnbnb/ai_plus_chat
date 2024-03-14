@@ -2,6 +2,7 @@ package com.gdut.ai.config;
 
 import com.gdut.ai.entity.ChatMessage;
 import com.gdut.ai.service.ChatMessageService;
+import com.gdut.ai.service.GroupMemberService;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -9,9 +10,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper; // 引入 Jackson 库进行 JSON 解析
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 
 public class MyWebSocketHandler extends TextWebSocketHandler {
@@ -20,10 +21,13 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     private final Map<Long, WebSocketSession> userSessions = new ConcurrentHashMap<>();
 
     private final ChatMessageService chatMessageService;
+
+    private final GroupMemberService groupMemberService;
     private final ObjectMapper objectMapper;
 
-    public MyWebSocketHandler(ChatMessageService chatMessageService) {
+    public MyWebSocketHandler(ChatMessageService chatMessageService, GroupMemberService groupMemberService) {
         this.chatMessageService = chatMessageService;
+        this.groupMemberService = groupMemberService;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -47,6 +51,14 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastMessage(ChatMessage message) {
+        if (message.getReceiverType() == 0) {
+            sendToUser(message);
+        } else {
+            sendToGroup(message);
+        }
+    }
+
+    private void sendToUser(ChatMessage message) {
         userSessions.values().forEach(session -> {
             try {
                 if (session.isOpen()) {
@@ -59,6 +71,22 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
             }
         });
     }
+
+    private void sendToGroup(ChatMessage message) {
+        // 获取群聊的所有成员列表
+        List<Long> groupMemberIds = groupMemberService.getGroupMemberIds(message.getReceiverId());
+        groupMemberIds.forEach(memberId -> {
+            WebSocketSession memberSession = userSessions.get(memberId);
+            if (memberSession != null && memberSession.isOpen()) {
+                try {
+                    String jsonMessage = objectMapper.writeValueAsString(message);
+                    memberSession.sendMessage(new TextMessage(jsonMessage));
+                } catch (IOException e) {
+                    // 异常处理
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
 }
-
-

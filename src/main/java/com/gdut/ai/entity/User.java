@@ -28,6 +28,8 @@ public class User implements Serializable {
     //邮箱
     private String email;
 
+    //密码
+    private String password;
 
     //性别 F 女 M 男
     private String sex;

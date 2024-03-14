@@ -3,8 +3,10 @@ package com.gdut.ai.common;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
+import org.junit.Test;
 import org.springframework.stereotype.Component;
 
+import java.sql.SQLOutput;
 import java.time.LocalDateTime;
 
 /**
@@ -25,6 +27,5 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
         log.info("公共字段自动填充【update】");
         metaObject.setValue("updateTime", LocalDateTime.now());
     }
-
 
 }
