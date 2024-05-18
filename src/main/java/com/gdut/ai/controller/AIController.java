@@ -7,7 +7,6 @@ import com.gdut.ai.service.AIService;
 import com.gdut.ai.service.ChatMessageService;
 import com.gdut.ai.service.MomentService;
 import com.gdut.ai.service.UserService;
-import com.gdut.ai.textenum.TextType;
 import com.gdut.ai.utils.AIPlusChatUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -58,7 +56,6 @@ public class AIController {
     @PostMapping("/sendMessage")
     public R<String> sendMessageToAI(@RequestBody Map<String, String> payload, HttpSession session) {
         Long userId = (Long) session.getAttribute("user");
-        log.info("发送消息，accessId：{}", userId);
         String message = payload.get("message");
         String type = payload.get("type");
         String contactIdStr = payload.get("contactId");
@@ -66,6 +63,7 @@ public class AIController {
         if (!StringUtils.isEmpty(contactIdStr)) {
             friendId = Long.parseLong(contactIdStr);
         }
+        log.info("反射发送资料：message:{}, userId:{}, friendId:{}, type:{}",message, userId, friendId, type);
         boolean flag = aiService.send(message, userId, friendId, type);
         if (flag) {
             return R.success("发送成功");
@@ -90,6 +88,7 @@ public class AIController {
         if (StringUtils.isEmpty(msg)) {
             return;
         }
+        log.info("message:{}", msg);
         String patternTemplate = "\\|(op|uid|fid|message):([^|]+)";
         Pattern pattern = Pattern.compile(patternTemplate);
         Matcher matcher = pattern.matcher(msg);
@@ -115,7 +114,8 @@ public class AIController {
         Long uidValue = uid.isEmpty() ? null : Long.valueOf(uid);
         Long fidValue = fid.isEmpty() ? null : Long.valueOf(fid);
         try {
-            Method method = AIPlusChatUtil.class.getDeclaredMethod(op, Long.class, Long.class, String.class, ResultCollector.class);
+            Method method = AIPlusChatUtil.class.getDeclaredMethod(op, Long.class
+                    , Long.class, String.class, ResultCollector.class);
             method.invoke(aiPlusChatUtil, uidValue, fidValue, message, resultCollector);
         } catch (Exception e) {
             e.printStackTrace();

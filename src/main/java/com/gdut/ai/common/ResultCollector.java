@@ -1,6 +1,7 @@
 package com.gdut.ai.common;
 
 
+import kotlin.jvm.Synchronized;
 
 //对大模型的问答结果进行收集
 public class ResultCollector {
@@ -37,7 +38,7 @@ public class ResultCollector {
         this.version = version;
     }
 
-    public String getAnswer() {
+    public synchronized String getAnswer() {
         return answer==null?"":answer;
     }
 
@@ -47,7 +48,7 @@ public class ResultCollector {
         return inputToken;
     }
 
-    public void setAnswer(String answer) {
+    public synchronized void setAnswer(String answer) {
         this.answer = answer;
     }
 

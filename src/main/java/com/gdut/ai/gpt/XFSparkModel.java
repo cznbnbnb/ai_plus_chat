@@ -31,7 +31,7 @@ public class XFSparkModel extends WebSocketListener {
 
     public Request request;
     public Gson gson = new Gson();
-    
+
     private final Long userId;
 
     StringBuilder combinedStringBuilder;
@@ -118,6 +118,7 @@ public class XFSparkModel extends WebSocketListener {
             System.out.print(temp.content);
             combinedStringBuilder.append(temp.content);
             if (m_XFSpark.getResultMap().containsKey(userId)) {
+                m_XFSpark.getResultMap().get(userId).setCanDisplay(canDisplay);
                 m_XFSpark.getResultMap().get(userId).setAnswer(combinedStringBuilder.toString());
             } else {
                 m_XFSpark.getResultMap().put(userId, new ResultCollector(combinedStringBuilder.toString()
@@ -138,6 +139,9 @@ public class XFSparkModel extends WebSocketListener {
             resultCollector.setState(STATE_FINISHED);
             this.status = STATE_FINISHED;
             wsCloseFlag = true;
+            // 新增直接关闭WebSocket连接的代码
+            webSocket.close(1000, "Process finished");
+            logger.info("WebSocket连接已关闭");
         }
     }
 

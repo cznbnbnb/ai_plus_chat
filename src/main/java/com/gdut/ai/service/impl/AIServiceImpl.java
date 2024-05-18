@@ -1,17 +1,13 @@
 package com.gdut.ai.service.impl;
 
-import com.alibaba.druid.util.StringUtils;
 import com.gdut.ai.common.ResultCollector;
 import com.gdut.ai.gpt.Gpt;
 import com.gdut.ai.service.AIService;
-import com.gdut.ai.textenum.TextType;
+import com.gdut.ai.prompts.PrePrompt;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -29,13 +25,13 @@ public class AIServiceImpl implements AIService {
     public boolean send(String msg, Long userId, Long friendId, String type) {
         try {
             if (type.equals("order")) {
-                String ids = "uid:" + userId.toString() + "\nfid:" + friendId.toString();
-                xfSpark.send(ids + TextType.ORDER_TEXT.getText() + msg, userId, false);
+                String ids = "后续的用户id请参考->uid为：" + userId.toString() + "\nfid为：" + friendId.toString()+ "\n";
+                xfSpark.send(ids + PrePrompt.ORDER_PROMPT.getText() + msg, userId, false);
             }else if (type.equals("again")) {
                 //
                 System.out.println("userId: " + userId);
             } else
-                xfSpark.send(TextType.NORMAL_TEXT.getText() + msg, userId, true);
+                xfSpark.send(PrePrompt.NORMAL_PROMPT.getText() + msg, userId, true);
             return true;
         } catch (Exception e) {
             log.error("发送消息失败", e);

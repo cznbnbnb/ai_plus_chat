@@ -35,7 +35,7 @@ public class XfSpark implements Gpt {
 
     @Override
     public void send(String question, Long userId,boolean canDisplay) throws Exception {
-        logger.info("发送消息{}，userId：{}",question, userId);
+        logger.info("发送消息{}，",question);
         String hostUrl = "https://spark-api.xf-yun.com/v3.5/chat";
         // 构建鉴权url
         String authUrl = getAuthUrl(hostUrl, apiKey, apiSecret);
@@ -52,7 +52,7 @@ public class XfSpark implements Gpt {
     public ResultCollector getAnswer(Long userId) throws AskException {
         if (resultMap.containsKey(userId)) {
             ResultCollector resultCollector = resultMap.get(userId);
-            if (resultCollector.getState() == ResultCollector.STATE_FINISHED) {
+            if (resultCollector.getState() == ResultCollector.STATE_FINISHED&&resultCollector.getCanDisplay()) {
                 resultMap.remove(userId);
                 return resultCollector;
             }
@@ -109,6 +109,8 @@ public class XfSpark implements Gpt {
 
     @Override
     public int getMaxToken() {
+
+
         return 8100;
     }
 

@@ -113,6 +113,8 @@ public class UserController {
                 user.setStatus(1);
                 userService.save(user);
                 return R.success("注册成功");
+            } else {
+                return R.error("该邮箱已被注册，请直接登录");
             }
         }
         return R.error("注册失败");
